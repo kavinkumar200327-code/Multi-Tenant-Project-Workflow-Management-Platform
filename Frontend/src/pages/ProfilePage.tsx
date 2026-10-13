@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -9,6 +10,7 @@ import { usePermissions } from '../hooks/usePermissions'
 import api from '../api/axios'
 import type { User as UserType } from '../types'
 import { Spinner } from '../components/common/Spinner'
+
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters').max(150),
@@ -58,8 +60,9 @@ const ROLES_INFO = [
 ]
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuthStore()
+  const { user, setUser, currentOrgId } = useAuthStore()
   const { roleBadge, capabilitiesList } = usePermissions()
+
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
 
@@ -144,31 +147,44 @@ export default function ProfilePage() {
           <Award size={18} className="text-indigo-400" />
           Your Permissions in Active Organization
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {capabilitiesList.map((cap) => (
-            <div
-              key={cap.name}
-              className={`p-3 rounded-xl border flex items-start gap-3 transition-colors ${
-                cap.allowed
-                  ? 'bg-emerald-950/20 border-emerald-500/30'
-                  : 'bg-slate-900/40 border-slate-800 opacity-60'
-              }`}
-            >
-              {cap.allowed ? (
-                <CheckCircle2 size={18} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-              ) : (
-                <XCircle size={18} className="text-slate-500 flex-shrink-0 mt-0.5" />
-              )}
-              <div>
-                <p className={`text-sm font-medium ${cap.allowed ? 'text-slate-100' : 'text-slate-400'}`}>
-                  {cap.name}
-                </p>
-                <p className="text-xs text-slate-400 mt-0.5">{cap.description}</p>
+        {!currentOrgId ? (
+          <div className="py-6 text-center border border-dashed border-slate-700/80 rounded-xl bg-slate-800/40 p-4">
+            <p className="text-sm text-slate-300 font-medium">No active organization selected</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Select or create an organization to view your role-based capabilities and workspace permissions.
+            </p>
+            <Link to="/organizations" className="btn-secondary text-xs py-1.5 px-3 mt-3 inline-flex items-center gap-1.5">
+              Go to Organizations →
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {capabilitiesList.map((cap) => (
+              <div
+                key={cap.name}
+                className={`p-3 rounded-xl border flex items-start gap-3 transition-colors ${
+                  cap.allowed
+                    ? 'bg-emerald-950/20 border-emerald-500/30'
+                    : 'bg-slate-900/40 border-slate-800 opacity-60'
+                }`}
+              >
+                {cap.allowed ? (
+                  <CheckCircle2 size={18} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <XCircle size={18} className="text-slate-500 flex-shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <p className={`text-sm font-medium ${cap.allowed ? 'text-slate-100' : 'text-slate-400'}`}>
+                    {cap.name}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">{cap.description}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
+
 
       {/* All Role Definitions Matrix */}
       <div className="card">

@@ -8,9 +8,10 @@ export interface RoleCapability {
 }
 
 export function usePermissions() {
-  const { currentOrgRole } = useAuthStore()
+  const { currentOrgRole, currentOrgId } = useAuthStore()
 
-  const role: OrgRole = currentOrgRole || 'viewer'
+  const hasOrg = Boolean(currentOrgId && currentOrgRole)
+  const role: OrgRole | null = currentOrgRole || null
 
   const isOwner = role === 'owner'
   const isAdmin = role === 'admin' || isOwner
@@ -19,21 +20,22 @@ export function usePermissions() {
   const isViewer = role === 'viewer'
 
   // Granular capability flags
-  const canCreateProject = isProjectManager
-  const canEditProject = isProjectManager
-  const canDeleteProject = isAdmin
+  const canCreateProject = hasOrg && isProjectManager
+  const canEditProject = hasOrg && isProjectManager
+  const canDeleteProject = hasOrg && isAdmin
 
-  const canCreateTask = !isViewer
-  const canEditTask = !isViewer
-  const canDeleteTask = isProjectManager // Members can delete only own tasks via backend check
-  const canMoveKanban = !isViewer
+  const canCreateTask = hasOrg && !isViewer
+  const canEditTask = hasOrg && !isViewer
+  const canDeleteTask = hasOrg && isProjectManager
+  const canMoveKanban = hasOrg && !isViewer
 
-  const canComment = !isViewer
-  const canUploadAttachment = !isViewer
+  const canComment = hasOrg && !isViewer
+  const canUploadAttachment = hasOrg && !isViewer
 
-  const canManageMembers = isAdmin
-  const canDeleteOrg = isOwner
-  const canCreateOrg = isOwner || isAdmin
+  const canManageMembers = hasOrg && isAdmin
+  const canDeleteOrg = hasOrg && isOwner
+  // Crucial: Users without an active organization can always create their first organization!
+  const canCreateOrg = !hasOrg || isOwner || isAdmin
 
   const roleBadgeConfig: Record<OrgRole, { label: string; color: string; bgColor: string; borderColor: string }> = {
     owner: {
@@ -67,6 +69,16 @@ export function usePermissions() {
       borderColor: 'border-slate-600',
     },
   }
+
+  const roleBadge = hasOrg && role
+    ? (roleBadgeConfig[role] || roleBadgeConfig.viewer)
+    : {
+        label: 'No Active Org',
+        color: 'text-slate-400',
+        bgColor: 'bg-slate-800/60',
+        borderColor: 'border-slate-700',
+      }
+
 
   const capabilitiesList: RoleCapability[] = [
     {
@@ -135,7 +147,8 @@ export function usePermissions() {
     canMoveKanban,
     canComment,
     canUploadAttachment,
-    roleBadge: roleBadgeConfig[role] || roleBadgeConfig.viewer,
+    roleBadge,
     capabilitiesList,
   }
 }
+

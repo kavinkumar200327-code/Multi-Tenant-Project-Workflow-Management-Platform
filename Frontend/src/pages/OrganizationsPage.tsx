@@ -55,11 +55,15 @@ export default function OrganizationsPage() {
           const active = data.find((o) => o.id === currentOrgId) || data[0]
           setCurrentOrg(active.id)
           setCurrentOrgRole(active.role || 'viewer')
+        } else {
+          setCurrentOrg(null)
+          setCurrentOrgRole(null)
         }
       })
       .catch(() => {})
       .finally(() => setIsFetching(false))
   }
+
 
   useEffect(() => {
     loadOrganizations()
@@ -136,9 +140,11 @@ export default function OrganizationsPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-slate-100">Organizations</h1>
-            <span className={`text-xs uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border ${roleBadge.bgColor} ${roleBadge.color} ${roleBadge.borderColor}`}>
-              {roleBadge.label} Role
-            </span>
+            {currentOrgId && (
+              <span className={`text-xs uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border ${roleBadge.bgColor} ${roleBadge.color} ${roleBadge.borderColor}`}>
+                {roleBadge.label} Role
+              </span>
+            )}
           </div>
           <p className="text-slate-400 mt-1">Manage your organizations, roles, and teams</p>
         </div>
@@ -149,7 +155,7 @@ export default function OrganizationsPage() {
               Team Members & Roles
             </button>
           )}
-          {canCreateOrg && (
+          {(canCreateOrg || orgs.length === 0) && (
             <button onClick={() => setShowModal(true)} className="btn-primary">
               <Plus size={18} />
               New Organization
@@ -157,6 +163,7 @@ export default function OrganizationsPage() {
           )}
         </div>
       </div>
+
 
       {orgs.length === 0 ? (
         <EmptyState
@@ -275,7 +282,7 @@ export default function OrganizationsPage() {
       </Modal>
 
       {/* Create Org Modal */}
-      {canCreateOrg && (
+      {(canCreateOrg || orgs.length === 0) && (
         <Modal
           isOpen={showModal}
           onClose={() => { setShowModal(false); reset() }}

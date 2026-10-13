@@ -33,12 +33,33 @@ def register_user(
             detail="Email is already registered",
         )
 
-    return user_repository.create(
+    user = user_repository.create(
         db,
         full_name=full_name,
         email=email,
         password_hash=hash_password(password),
     )
+
+    try:
+        import re
+        from app.services.organization_service import OrganizationService
+
+        base_name = full_name.strip()
+        org_name = f"{base_name}'s Workspace" if not base_name.endswith("s") else f"{base_name}' Workspace"
+        base_slug = re.sub(r"[^a-z0-9]+", "-", base_name.lower()).strip("-") or "workspace"
+        slug = f"{base_slug}-{user.id}"
+
+        OrganizationService.create_organization(
+            db=db,
+            name=org_name,
+            slug=slug,
+            owner_id=user.id,
+        )
+    except Exception:
+        pass
+
+    return user
+
 
 
 def authenticate_user(

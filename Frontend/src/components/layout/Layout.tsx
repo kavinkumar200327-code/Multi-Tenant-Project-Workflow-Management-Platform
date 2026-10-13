@@ -21,9 +21,13 @@ export function Layout() {
           const activeOrg = orgs.find((o) => o.id === currentOrgId) || orgs[0]
           setCurrentOrg(activeOrg.id)
           setCurrentOrgRole(activeOrg.role || 'viewer')
+        } else {
+          setCurrentOrg(null)
+          setCurrentOrgRole(null)
         }
       })
       .catch(() => {})
+
 
     // Load initial notifications for sidebar unread badge
     notificationsApi
