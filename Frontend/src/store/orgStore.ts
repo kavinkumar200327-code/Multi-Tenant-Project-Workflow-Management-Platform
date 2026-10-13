@@ -12,7 +12,7 @@ interface OrgState {
   setMyMembership: (membership: Membership | null) => void
   addOrganization: (org: Organization) => void
   updateOrganization: (org: Organization) => void
-  removeOrganization: (orgId: string) => void
+  removeOrganization: (orgId: number | string) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -39,8 +39,8 @@ export const useOrgStore = create<OrgState>((set) => ({
 
   removeOrganization: (orgId) =>
     set((state) => ({
-      organizations: state.organizations.filter((o) => o.id !== orgId),
-      currentOrg: state.currentOrg?.id === orgId ? null : state.currentOrg,
+      organizations: state.organizations.filter((o) => String(o.id) !== String(orgId)),
+      currentOrg: String(state.currentOrg?.id) === String(orgId) ? null : state.currentOrg,
     })),
 
   setLoading: (isLoading) => set({ isLoading }),

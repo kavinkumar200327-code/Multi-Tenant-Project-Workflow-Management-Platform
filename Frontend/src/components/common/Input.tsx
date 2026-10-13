@@ -32,9 +32,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             className={cn(
               'input',
-              leftElement && 'pl-10',
-              rightElement && 'pr-10',
-              error && 'border-red-500 focus:ring-red-500',
+              leftElement ? 'pl-10' : undefined,
+              rightElement ? 'pr-10' : undefined,
+              error ? 'border-red-500 focus:ring-red-500' : undefined,
               className,
             )}
             {...props}

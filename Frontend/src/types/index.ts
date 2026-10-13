@@ -4,6 +4,8 @@ export interface User {
   id: number
   full_name: string
   email: string
+  username?: string
+  avatar_url?: string
   is_active: boolean
   created_at: string
   updated_at: string
@@ -13,6 +15,7 @@ export interface TokenResponse {
   access_token: string
   refresh_token: string
   token_type: string
+  user?: User
 }
 
 export interface LoginPayload {
@@ -49,6 +52,8 @@ export interface OrganizationMember {
   role: OrgRole
   status: string
 }
+
+export type Membership = OrganizationMember
 
 export interface OrganizationMemberDetail {
   id: number
