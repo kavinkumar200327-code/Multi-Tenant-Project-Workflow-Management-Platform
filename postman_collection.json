@@ -1,0 +1,812 @@
+{
+  "info": {
+    "_postman_id": "9d8b74c2-9e28-4ef6-a67b-2321481b2234",
+    "name": "Multi-Tenant Project & Workflow Management API",
+    "description": "Comprehensive Postman Collection covering Authentication, Multi-Tenant Organizations, Role-Based Access Control, Projects, Workflow Tasks, Comments, File Attachments, Notifications, and Dashboard Analytics.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orgId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "projectId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "System Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Demo User\",\n  \"email\": \"demouser@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login (Alice Owner)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.access_token) {",
+                  "    pm.collectionVariables.set('accessToken', res.access_token);",
+                  "    pm.collectionVariables.set('refreshToken', res.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Bob Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.access_token) {",
+                  "    pm.collectionVariables.set('accessToken', res.access_token);",
+                  "    pm.collectionVariables.set('refreshToken', res.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"Password@123\",\n  \"new_password\": \"NewPassword@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "change-password"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organizations",
+      "item": [
+        {
+          "name": "List User Organizations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/organization/",
+              "host": ["{{baseUrl}}"],
+              "path": ["organization", ""]
+            }
+          }
+        },
+        {
+          "name": "Create Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nexus Global Corp\",\n  \"slug\": \"nexus-global-corp\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organization/",
+              "host": ["{{baseUrl}}"],
+              "path": ["organization", ""]
+            }
+          }
+        },
+        {
+          "name": "Get Organization By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/organization/{{orgId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["organization", "{{orgId}}"]
+            }
+          }
+        },
+        {
+          "name": "List Organization Members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/organization/{{orgId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["organization", "{{orgId}}", "members"]
+            }
+          }
+        },
+        {
+          "name": "Add Member to Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 4,\n  \"role\": \"member\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organization/{{orgId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["organization", "{{orgId}}", "members"]
+            }
+          }
+        },
+        {
+          "name": "Update Member Role (RBAC)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"project_manager\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organization/{{orgId}}/members/4",
+              "host": ["{{baseUrl}}"],
+              "path": ["organization", "{{orgId}}", "members", "4"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "List Projects by Organization",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{orgId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{orgId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Project in Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": 1,\n  \"name\": \"Cloud Infrastructure Modernization\",\n  \"description\": \"Migrating on-prem microservices to Kubernetes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{orgId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{orgId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Project By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/projects/item/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "item", "{{projectId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cloud Infrastructure Modernization v2\",\n  \"description\": \"Updated scope with multi-region backup cluster\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/item/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "item", "{{projectId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Project",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/projects/item/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "item", "{{projectId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks & Workflow",
+      "item": [
+        {
+          "name": "List Tasks by Project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/project/{{projectId}}?offset=0&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "project", "{{projectId}}"],
+              "query": [
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": 1,\n  \"title\": \"Implement Multi-Tenancy Scoped Security\",\n  \"description\": \"Enforce organization-scoped query filtering across all services\",\n  \"priority\": \"high\",\n  \"status\": \"todo\",\n  \"assigned_to_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", ""]
+            }
+          }
+        },
+        {
+          "name": "Get Task By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Task Workflow Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Assign Task to Member",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assigned_to_id\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "assign"]
+            }
+          }
+        },
+        {
+          "name": "Create Task Dependency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"depends_on_task_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/dependencies",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "dependencies"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "List Task Comments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/comments/task/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "task", "{{taskId}}"]
+            }
+          }
+        },
+        {
+          "name": "Add Comment to Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": 1,\n  \"content\": \"Scoped notifications and RBAC policies verified successfully!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comments/",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attachments",
+      "item": [
+        {
+          "name": "List Task Attachments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/attachments/task/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["attachments", "task", "{{taskId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications (Tenant-Scoped)",
+      "item": [
+        {
+          "name": "Get Notifications for Current Workspace Org",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/?organization_id={{orgId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", ""],
+              "query": [
+                {
+                  "key": "organization_id",
+                  "value": "{{orgId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All Read for Current Workspace Org",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all?organization_id={{orgId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "read-all"],
+              "query": [
+                {
+                  "key": "organization_id",
+                  "value": "{{orgId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Organization Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/summary/{{orgId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "summary", "{{orgId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

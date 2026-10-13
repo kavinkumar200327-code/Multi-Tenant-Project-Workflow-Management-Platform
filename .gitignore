@@ -1,0 +1,55 @@
+# ==============================================================================
+# Multi-Tenant Project & Workflow Management Platform - Git Ignore Rules
+# ==============================================================================
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python / Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+
+# Uploaded Files & Temporary Directories
+Backend/uploads/*
+!Backend/uploads/.gitkeep
+scratch/
+tmp/
+temp/
+
+# Node / Frontend
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# IDE / OS specific files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
