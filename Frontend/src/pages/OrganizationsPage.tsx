@@ -44,7 +44,7 @@ export default function OrganizationsPage() {
   const [orgs, setOrgs] = useState<Organization[]>([])
   const { setCurrentOrg, setCurrentOrgRole, currentOrgId } = useAuthStore()
   const setNotifications = useNotificationStore((s) => s.setNotifications)
-  const { canManageMembers } = usePermissions()
+  const { canManageMembers, canCreateOrg, roleBadge } = usePermissions()
 
   const loadOrganizations = () => {
     organizationsApi
@@ -107,6 +107,11 @@ export default function OrganizationsPage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
   const onSubmit = async (data: FormValues) => {
+    if (!canCreateOrg && orgs.length > 0) {
+      toast.error('Only Organization Owners and Admins can create new organizations.')
+      setShowModal(false)
+      return
+    }
     setIsLoading(true)
     try {
       const org = await organizationsApi.create(data)
@@ -129,7 +134,12 @@ export default function OrganizationsPage() {
     <div>
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Organizations</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-100">Organizations</h1>
+            <span className={`text-xs uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border ${roleBadge.bgColor} ${roleBadge.color} ${roleBadge.borderColor}`}>
+              {roleBadge.label} Role
+            </span>
+          </div>
           <p className="text-slate-400 mt-1">Manage your organizations, roles, and teams</p>
         </div>
         <div className="flex items-center gap-3">
@@ -139,10 +149,12 @@ export default function OrganizationsPage() {
               Team Members & Roles
             </button>
           )}
-          <button onClick={() => setShowModal(true)} className="btn-primary">
-            <Plus size={18} />
-            New Organization
-          </button>
+          {canCreateOrg && (
+            <button onClick={() => setShowModal(true)} className="btn-primary">
+              <Plus size={18} />
+              New Organization
+            </button>
+          )}
         </div>
       </div>
 
@@ -150,8 +162,16 @@ export default function OrganizationsPage() {
         <EmptyState
           icon={Building2}
           title="No organizations yet"
-          description="Create your first organization to start managing projects and teams."
-          action={{ label: 'Create Organization', onClick: () => setShowModal(true) }}
+          description={
+            canCreateOrg || orgs.length === 0
+              ? "Create your first organization to start managing projects and teams."
+              : "You do not belong to any organization yet. Please contact an organization owner or administrator to invite you."
+          }
+          action={
+            canCreateOrg || orgs.length === 0
+              ? { label: 'Create Organization', onClick: () => setShowModal(true) }
+              : undefined
+          }
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -255,59 +275,61 @@ export default function OrganizationsPage() {
       </Modal>
 
       {/* Create Org Modal */}
-      <Modal
-        isOpen={showModal}
-        onClose={() => { setShowModal(false); reset() }}
-        title="Create Organization"
-        size="sm"
-      >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Name <span className="text-red-400">*</span>
-            </label>
-            <input
-              {...register('name')}
-              className="input-field"
-              placeholder="Acme Corp"
-            />
-            {errors.name && (
-              <p className="text-xs text-red-400 mt-1">{errors.name.message}</p>
-            )}
-          </div>
+      {canCreateOrg && (
+        <Modal
+          isOpen={showModal}
+          onClose={() => { setShowModal(false); reset() }}
+          title="Create Organization"
+          size="sm"
+        >
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                {...register('name')}
+                className="input-field"
+                placeholder="Acme Corp"
+              />
+              {errors.name && (
+                <p className="text-xs text-red-400 mt-1">{errors.name.message}</p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Slug <span className="text-red-400">*</span>
-            </label>
-            <input
-              {...register('slug')}
-              className="input-field"
-              placeholder="acme-corp"
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Lowercase letters, numbers, and hyphens only
-            </p>
-            {errors.slug && (
-              <p className="text-xs text-red-400 mt-1">{errors.slug.message}</p>
-            )}
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Slug <span className="text-red-400">*</span>
+              </label>
+              <input
+                {...register('slug')}
+                className="input-field"
+                placeholder="acme-corp"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Lowercase letters, numbers, and hyphens only
+              </p>
+              {errors.slug && (
+                <p className="text-xs text-red-400 mt-1">{errors.slug.message}</p>
+              )}
+            </div>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => { setShowModal(false); reset() }}
-              className="btn-secondary flex-1"
-            >
-              Cancel
-            </button>
-            <button type="submit" disabled={isLoading} className="btn-primary flex-1">
-              {isLoading ? <Spinner size={16} /> : null}
-              Create
-            </button>
-          </div>
-        </form>
-      </Modal>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setShowModal(false); reset() }}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button type="submit" disabled={isLoading} className="btn-primary flex-1">
+                {isLoading ? <Spinner size={16} /> : null}
+                Create
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   )
 }

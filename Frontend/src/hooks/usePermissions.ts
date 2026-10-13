@@ -33,6 +33,7 @@ export function usePermissions() {
 
   const canManageMembers = isAdmin
   const canDeleteOrg = isOwner
+  const canCreateOrg = isOwner || isAdmin
 
   const roleBadgeConfig: Record<OrgRole, { label: string; color: string; bgColor: string; borderColor: string }> = {
     owner: {
@@ -104,6 +105,11 @@ export function usePermissions() {
       allowed: canManageMembers,
     },
     {
+      name: 'Create Organizations',
+      description: 'Provision and create new organizational workspaces',
+      allowed: canCreateOrg,
+    },
+    {
       name: 'Full Organization Ownership',
       description: 'Full administrative rights and organization deletion',
       allowed: isOwner,
@@ -117,6 +123,9 @@ export function usePermissions() {
     isProjectManager,
     isMember,
     isViewer,
+    canCreateOrg,
+    canManageMembers,
+    canDeleteOrg,
     canCreateProject,
     canEditProject,
     canDeleteProject,
@@ -126,8 +135,6 @@ export function usePermissions() {
     canMoveKanban,
     canComment,
     canUploadAttachment,
-    canManageMembers,
-    canDeleteOrg,
     roleBadge: roleBadgeConfig[role] || roleBadgeConfig.viewer,
     capabilitiesList,
   }

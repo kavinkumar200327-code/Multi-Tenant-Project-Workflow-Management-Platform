@@ -32,12 +32,12 @@ type PasswordValues = z.infer<typeof passwordSchema>
 const ROLES_INFO = [
   {
     role: 'Owner',
-    desc: 'Complete administrative authority over the entire organization, project settings, billing, and member access.',
+    desc: 'Complete administrative authority over the organization, manage members & billing, create/delete organizations and projects.',
     color: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
   },
   {
     role: 'Admin',
-    desc: 'Can manage organization members, promote/demote roles, create and delete projects, and moderate tasks.',
+    desc: 'Can create organizations, manage organization members, promote/demote roles, create and delete projects, and moderate tasks.',
     color: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300',
   },
   {
@@ -46,13 +46,13 @@ const ROLES_INFO = [
     color: 'border-sky-500/40 bg-sky-500/10 text-sky-300',
   },
   {
-    role: 'Member',
+    role: 'Member / Contributor',
     desc: 'Can create tasks, update assigned task statuses, move Kanban cards, add comments, and upload attachments.',
     color: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
   },
   {
     role: 'Viewer',
-    desc: 'Read-only access to view organization projects, Kanban boards, task metrics, comments, and attachments.',
+    desc: 'Strictly read-only access to view organization projects, Kanban boards, task metrics, comments, and attachments.',
     color: 'border-slate-600 bg-slate-700/30 text-slate-300',
   },
 ]

@@ -213,6 +213,7 @@ export default function KanbanBoardPage() {
                 tasks={getColumnTasks(col.id)}
                 onAddTask={canCreateTask ? () => handleAddTask(col.id) : undefined}
                 onTaskClick={handleTaskClick}
+                isDragDisabled={!canMoveKanban}
               />
             ))}
           </div>

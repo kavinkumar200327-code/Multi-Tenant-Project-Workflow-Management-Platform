@@ -12,6 +12,7 @@ interface KanbanColumnProps {
   tasks: Task[]
   onAddTask?: () => void
   onTaskClick?: (task: Task) => void
+  isDragDisabled?: boolean
 }
 
 export function KanbanColumn({
@@ -21,6 +22,7 @@ export function KanbanColumn({
   tasks,
   onAddTask,
   onTaskClick,
+  isDragDisabled,
 }: KanbanColumnProps) {
   return (
     <div className="flex flex-col w-72 flex-shrink-0">
@@ -57,7 +59,12 @@ export function KanbanColumn({
             }`}
           >
             {tasks.map((task, index) => (
-              <Draggable key={task.id} draggableId={String(task.id)} index={index}>
+              <Draggable
+                key={task.id}
+                draggableId={String(task.id)}
+                index={index}
+                isDragDisabled={isDragDisabled}
+              >
                 {(dragProvided, dragSnapshot) => (
                   <div
                     ref={dragProvided.innerRef}
@@ -70,12 +77,14 @@ export function KanbanColumn({
                     onClick={() => !dragSnapshot.isDragging && onTaskClick?.(task)}
                   >
                     <div className="flex items-start gap-2">
-                      <div
-                        {...dragProvided.dragHandleProps}
-                        className="mt-0.5 text-slate-500 hover:text-slate-300 transition-colors"
-                      >
-                        <GripVertical size={14} />
-                      </div>
+                      {!isDragDisabled && (
+                        <div
+                          {...dragProvided.dragHandleProps}
+                          className="mt-0.5 text-slate-500 hover:text-slate-300 transition-colors"
+                        >
+                          <GripVertical size={14} />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1.5">
                           <p className="text-sm font-medium text-slate-100 line-clamp-2 leading-snug">

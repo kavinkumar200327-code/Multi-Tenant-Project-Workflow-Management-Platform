@@ -6,7 +6,10 @@ from app.core.constants import OrganizationRole
 from app.core.exceptions import forbidden, not_found
 from app.db.session import get_db
 from app.dependencies.auth import get_current_user
-from app.dependencies.permissions import get_user_org_membership
+from app.dependencies.permissions import (
+    check_organization_create_permission,
+    get_user_org_membership,
+)
 from app.dependencies.tenant import (
     get_current_organization_membership,
 )
@@ -54,11 +57,20 @@ def get_my_organizations(
     response_model=OrganizationResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@router.post(
+    "/",
+    response_model=OrganizationResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
+)
 def create_organization(
     payload: OrganizationCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Enforce RBAC: Viewers, Members, and Project Managers cannot create new organizations
+    check_organization_create_permission(db, current_user)
+
     if get_by_slug(
         db,
         payload.slug,

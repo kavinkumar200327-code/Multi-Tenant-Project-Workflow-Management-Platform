@@ -26,6 +26,29 @@ def get_user_org_membership(
     return membership
 
 
+def check_organization_create_permission(
+    db: Session,
+    user: User,
+) -> None:
+    memberships = list(
+        db.scalars(
+            select(OrganizationMember).where(
+                OrganizationMember.user_id == user.id,
+                OrganizationMember.status == MembershipStatus.ACTIVE,
+            )
+        ).all()
+    )
+    if memberships:
+        has_admin_role = any(
+            m.role in {OrganizationRole.OWNER, OrganizationRole.ADMIN}
+            for m in memberships
+        )
+        if not has_admin_role:
+            raise forbidden(
+                "Permission denied: Viewers, Members, and Project Managers cannot create new organizations. Only Organization Owners and Admins can create organizations."
+            )
+
+
 def check_project_create_permission(
     db: Session,
     user: User,
