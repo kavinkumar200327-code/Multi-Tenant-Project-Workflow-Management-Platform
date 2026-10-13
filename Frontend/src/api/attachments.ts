@@ -1,8 +1,8 @@
 import apiClient from './axios'
-import type { Attachment } from '@/types'
+import type { Attachment } from '../types'
 
 export const attachmentsApi = {
-  getByTask: async (taskId: string): Promise<Attachment[]> => {
+  getByTask: async (taskId: number | string): Promise<Attachment[]> => {
     const response = await apiClient.get<Attachment[]>('/attachments/', {
       params: { task_id: taskId },
     })
@@ -10,13 +10,13 @@ export const attachmentsApi = {
   },
 
   upload: async (
-    taskId: string,
+    taskId: number | string,
     file: File,
     onProgress?: (progress: number) => void,
   ): Promise<Attachment> => {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('task_id', taskId)
+    formData.append('task_id', String(taskId))
 
     const response = await apiClient.post<Attachment>('/attachments/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -30,7 +30,22 @@ export const attachmentsApi = {
     return response.data
   },
 
-  delete: async (attachmentId: string): Promise<void> => {
+  delete: async (attachmentId: number | string): Promise<void> => {
     await apiClient.delete(`/attachments/${attachmentId}`)
   },
+
+  download: async (attachmentId: number | string, fileName: string): Promise<void> => {
+    const response = await apiClient.get(`/attachments/${attachmentId}/download`, {
+      responseType: 'blob',
+    })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  },
 }
+

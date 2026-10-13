@@ -1,3 +1,4 @@
+import os
 from fastapi import (
     APIRouter,
     Depends,
@@ -8,6 +9,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.core.constants import OrganizationRole
@@ -30,6 +32,37 @@ router = APIRouter(
     prefix="/attachments",
     tags=["Attachments"],
 )
+
+
+@router.get(
+    "",
+    response_model=list[AttachmentResponse],
+)
+@router.get(
+    "/",
+    response_model=list[AttachmentResponse],
+)
+def list_attachments_root(
+    task_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    task = db.get(Task, task_id)
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
+    project = db.get(Project, task.project_id)
+    if project:
+        get_user_org_membership(db, current_user.id, project.organization_id)
+
+    return AttachmentService.get_task_attachments(
+        db=db,
+        task_id=task_id,
+    )
+
 
 
 @router.post(
@@ -148,3 +181,41 @@ def delete_attachment(
     )
 
     return None
+
+
+@router.get(
+    "/{attachment_id}/download",
+)
+def download_attachment(
+    attachment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    attachment = AttachmentService.get_attachment_by_id(
+        db=db,
+        attachment_id=attachment_id,
+    )
+
+    if attachment is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Attachment not found.",
+        )
+
+    task = db.get(Task, attachment.task_id)
+    if task:
+        project = db.get(Project, task.project_id)
+        if project:
+            get_user_org_membership(db, current_user.id, project.organization_id)
+
+    if attachment.file_path and os.path.exists(attachment.file_path):
+        return FileResponse(
+            path=attachment.file_path,
+            filename=attachment.file_name,
+            media_type=attachment.file_type or "application/octet-stream",
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Attachment file content not found on server.",
+    )

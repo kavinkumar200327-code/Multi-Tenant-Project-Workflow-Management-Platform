@@ -1,12 +1,30 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, MessageSquare, Paperclip, Calendar, User, Flag, Trash2, Send, Edit2, X, Check, Eye } from 'lucide-react'
+import {
+  ChevronLeft,
+  MessageSquare,
+  Paperclip,
+  Calendar,
+  User,
+  Flag,
+  Trash2,
+  Send,
+  Edit2,
+  X,
+  Check,
+  Eye,
+  Plus,
+  Download,
+  UploadCloud,
+  FileText,
+} from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { tasksApi } from '../api/tasks'
 import { commentsApi } from '../api/comments'
+import { attachmentsApi } from '../api/attachments'
 import { usePermissions } from '../hooks/usePermissions'
-import type { Task, Comment } from '../types'
+import type { Task, Comment, Attachment } from '../types'
 import { PRIORITY_COLORS, STATUS_COLORS } from '../types'
 import { Badge } from '../components/common/Badge'
 import { Spinner } from '../components/common/Spinner'
@@ -19,23 +37,31 @@ export default function TaskDetailPage() {
   const { canEditTask, canComment, canUploadAttachment, canDeleteTask, isViewer } = usePermissions()
   const [task, setTask] = useState<Task | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   const [loading, setLoading] = useState(true)
   const [commentText, setCommentText] = useState('')
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
   const [editCommentText, setEditCommentText] = useState('')
 
+  // Attachment upload state
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const tId = parseInt(taskId ?? '0')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const [t, c] = await Promise.all([
+      const [t, c, a] = await Promise.all([
         tasksApi.getById(tId),
         commentsApi.listByTask(tId),
+        attachmentsApi.getByTask(tId),
       ])
       setTask(t)
       setComments(c)
+      setAttachments(a)
     } catch {
       toast.error('Failed to load task')
       navigate(-1)
@@ -45,6 +71,7 @@ export default function TaskDetailPage() {
   }, [tId, navigate])
 
   useEffect(() => { fetchData() }, [fetchData])
+
 
   const handleAddComment = async () => {
     if (!canComment) {
@@ -105,6 +132,56 @@ export default function TaskDetailPage() {
       navigate(-1)
     } catch {}
   }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !task) return
+    if (!canUploadAttachment) {
+      toast.error('Viewers cannot upload attachments.')
+      return
+    }
+    setIsUploading(true)
+    setUploadProgress(0)
+    try {
+      const newAtt = await attachmentsApi.upload(task.id, file, (p) => setUploadProgress(p))
+      setAttachments((prev) => [newAtt, ...prev])
+      toast.success(`Attached "${file.name}"`)
+    } catch {
+      toast.error('Failed to upload attachment')
+    } finally {
+      setIsUploading(false)
+      setUploadProgress(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleDownloadAttachment = async (att: Attachment) => {
+    try {
+      await attachmentsApi.download(att.id, att.file_name)
+      toast.success(`Downloaded "${att.file_name}"`)
+    } catch {
+      toast.error('Failed to download attachment')
+    }
+  }
+
+  const handleDeleteAttachment = async (attId: number, fileName: string) => {
+    if (!confirm(`Delete attachment "${fileName}"?`)) return
+    try {
+      await attachmentsApi.delete(attId)
+      setAttachments((prev) => prev.filter((a) => a.id !== attId))
+      toast.success('Attachment deleted')
+    } catch {
+      toast.error('Failed to delete attachment')
+    }
+  }
+
+  const formatFileSize = (bytes?: number | null) => {
+    if (!bytes) return ''
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
 
   if (loading) return <Spinner fullScreen />
   if (!task) return null
@@ -306,12 +383,125 @@ export default function TaskDetailPage() {
           </div>
 
           <div className="card">
-            <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-              <Paperclip size={16} className="text-indigo-400" />
-              Attachments
-            </h3>
-            <p className="text-xs text-slate-500">No attachments yet</p>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                <Paperclip size={16} className="text-indigo-400" />
+                Attachments ({attachments.length})
+              </h3>
+              {canUploadAttachment && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="btn-secondary text-xs py-1 px-2.5 gap-1.5"
+                  title="Upload attachment"
+                >
+                  <Plus size={13} />
+                  <span>Upload</span>
+                </button>
+              )}
+            </div>
+
+            {/* Hidden file input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
+            {/* Uploading progress indicator */}
+            {isUploading && (
+              <div className="mb-3 p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-500/30">
+                <div className="flex items-center justify-between text-xs text-indigo-300 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <Spinner size={12} /> Uploading...
+                  </span>
+                  {uploadProgress !== null && <span>{uploadProgress}%</span>}
+                </div>
+                {uploadProgress !== null && (
+                  <div className="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-indigo-500 h-1.5 transition-all duration-150"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Attachments List */}
+            {attachments.length === 0 ? (
+              canUploadAttachment ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-700/80 hover:border-indigo-500/50 rounded-xl p-4 text-center cursor-pointer transition-colors group"
+                >
+                  <UploadCloud size={24} className="mx-auto text-slate-500 group-hover:text-indigo-400 transition-colors mb-1.5" />
+                  <p className="text-xs font-medium text-slate-300 group-hover:text-indigo-300">
+                    Click to upload a file
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Documents, images, archives</p>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500">No attachments yet</p>
+              )
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {attachments.map((att) => {
+                  const canDeleteAtt = !isViewer && (canDeleteTask || att.uploaded_by_id === user?.id)
+                  return (
+                    <div
+                      key={att.id}
+                      className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-750/70 border border-slate-700/70 hover:border-slate-600 transition-all group"
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0">
+                          <FileText size={14} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-slate-200 truncate" title={att.file_name}>
+                            {att.file_name}
+                          </p>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                            {att.file_size ? <span>{formatFileSize(att.file_size)}</span> : null}
+                            <span>•</span>
+                            <span>{format(new Date(att.created_at), 'MMM d')}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleDownloadAttachment(att)}
+                          className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-indigo-300 transition-colors"
+                          title="Download file"
+                        >
+                          <Download size={13} />
+                        </button>
+                        {canDeleteAtt && (
+                          <button
+                            onClick={() => handleDeleteAttachment(att.id, att.file_name)}
+                            className="p-1.5 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                            title="Delete attachment"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Read-only notice for Viewer */}
+            {!canUploadAttachment && (
+              <div className="pt-3 mt-3 border-t border-slate-700/60 text-[11px] text-slate-500 flex items-center gap-1.5">
+                <Eye size={13} /> Attachments are read-only for Viewer role.
+              </div>
+            )}
           </div>
+
         </div>
       </div>
     </div>
