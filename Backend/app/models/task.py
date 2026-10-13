@@ -133,3 +133,7 @@ class Task(Base):
         back_populates="task",
         cascade="all, delete-orphan",
     )
+
+    @property
+    def project_name(self) -> str | None:
+        return self.project.name if self.project else None

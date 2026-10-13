@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, FolderKanban, KanbanSquare, Trash2, Building2, Shield } from 'lucide-react'
+import { Plus, FolderKanban, KanbanSquare, Trash2, Building2, Search, Filter } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { projectsApi } from '../api/projects'
@@ -37,6 +37,10 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeStatusFilter = searchParams.get('status') || 'all'
+
   const { currentOrgId } = useAuthStore()
   const { canCreateProject, canDeleteProject, roleBadge } = usePermissions()
   const setNotifications = useNotificationStore((s) => s.setNotifications)
@@ -58,6 +62,42 @@ export default function ProjectsPage() {
       .catch(() => toast.error('Failed to load projects'))
       .finally(() => setLoading(false))
   }, [currentOrgId])
+
+  const counts = useMemo(() => {
+    return {
+      all: projects.length,
+      active: projects.filter((p) => p.status === 'active').length,
+      planning: projects.filter((p) => p.status === 'planning').length,
+      completed: projects.filter((p) => p.status === 'completed').length,
+      on_hold: projects.filter((p) => p.status === 'on_hold').length,
+      archived: projects.filter((p) => p.status === 'archived').length,
+    }
+  }, [projects])
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) => {
+      if (activeStatusFilter !== 'all' && project.status !== activeStatusFilter) {
+        return false
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const matchesName = project.name.toLowerCase().includes(q)
+        const matchesDesc = project.description?.toLowerCase().includes(q) ?? false
+        if (!matchesName && !matchesDesc) return false
+      }
+      return true
+    })
+  }, [projects, activeStatusFilter, searchQuery])
+
+  const handleFilterClick = (status: string) => {
+    if (status === 'all') {
+      searchParams.delete('status')
+      setSearchParams(searchParams)
+    } else {
+      setSearchParams({ status })
+    }
+  }
+
 
   const onSubmit = async (data: FormValues) => {
     if (!currentOrgId) return
@@ -125,6 +165,56 @@ export default function ProjectsPage() {
         )}
       </div>
 
+      {projects.length > 0 && (
+        <div className="space-y-4 mb-6">
+          {/* Status Tabs and Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+              {[
+                { id: 'all', label: 'All', count: counts.all },
+                { id: 'active', label: 'Active', count: counts.active },
+                { id: 'planning', label: 'Planning', count: counts.planning },
+                { id: 'completed', label: 'Completed', count: counts.completed },
+                { id: 'on_hold', label: 'On Hold', count: counts.on_hold },
+              ].map((tab) => {
+                const isActive = activeStatusFilter === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleFilterClick(tab.id)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      isActive
+                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/20'
+                        : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/80 hover:border-slate-600'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-300'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="relative min-w-[220px]">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search projects..."
+                className="input-field pl-9 py-1.5 text-xs"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {projects.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
@@ -140,9 +230,27 @@ export default function ProjectsPage() {
               : undefined
           }
         />
+      ) : filteredProjects.length === 0 ? (
+        <div className="card text-center py-12">
+          <Filter size={32} className="mx-auto text-slate-500 mb-2" />
+          <h3 className="text-base font-semibold text-slate-200">No matching projects</h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            No projects matched the selected status "{activeStatusFilter}" or search term.
+          </p>
+          <button
+            onClick={() => {
+              handleFilterClick('all')
+              setSearchQuery('')
+            }}
+            className="btn-secondary text-xs mt-4 mx-auto"
+          >
+            Clear filters
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
+
             <div
               key={project.id}
               className="card hover:border-indigo-500/50 cursor-pointer transition-all group relative"

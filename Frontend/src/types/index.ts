@@ -124,6 +124,7 @@ export interface Task {
   due_date: string | null
   created_at: string
   updated_at: string
+  project_name?: string
 }
 
 export interface TaskDependency {

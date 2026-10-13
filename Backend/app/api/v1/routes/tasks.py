@@ -31,18 +31,36 @@ router = APIRouter(
 @router.get(
     "",
     response_model=list[TaskResponse],
-    include_in_schema=False,
 )
 @router.get(
     "/",
     response_model=list[TaskResponse],
-    include_in_schema=False,
 )
 def get_tasks_root(
+    organization_id: int | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    priority: str | None = Query(default=None),
+    overdue: bool | None = Query(default=None),
+    search: str | None = Query(default=None),
+    offset: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if organization_id:
+        get_user_org_membership(db, current_user.id, organization_id)
+        return TaskService.get_tasks_by_organization(
+            db=db,
+            organization_id=organization_id,
+            offset=offset,
+            limit=limit,
+            search=search,
+            status=status_filter,
+            priority=priority,
+            overdue=overdue,
+        )
     return []
+
 
 
 @router.post(

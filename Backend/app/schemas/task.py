@@ -66,6 +66,7 @@ class TaskResponse(TaskBase):
     position: int
     created_at: datetime
     updated_at: datetime
+    project_name: str | None = None
 
 
 class TaskDependencyCreate(BaseModel):

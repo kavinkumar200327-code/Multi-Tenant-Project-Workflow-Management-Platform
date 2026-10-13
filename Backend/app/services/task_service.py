@@ -1,12 +1,67 @@
-from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
+from sqlalchemy import or_, select
+from sqlalchemy.orm import Session, joinedload
+
+from app.models.project import Project
 from app.models.task import Task
 from app.models.task_dependency import TaskDependency
 from app.schemas.task import TaskCreate, TaskUpdate
 
 
 class TaskService:
+
+    @staticmethod
+    def get_tasks_by_organization(
+        db: Session,
+        organization_id: int,
+        offset: int = 0,
+        limit: int = 100,
+        search: str | None = None,
+        status: str | None = None,
+        priority: str | None = None,
+        overdue: bool | None = None,
+    ) -> list[Task]:
+        statement = (
+            select(Task)
+            .join(Project, Task.project_id == Project.id)
+            .options(joinedload(Task.project))
+            .where(Project.organization_id == organization_id)
+        )
+
+        if search:
+            pattern = f"%{search}%"
+            statement = statement.where(
+                or_(
+                    Task.title.ilike(pattern),
+                    Task.description.ilike(pattern),
+                )
+            )
+
+        if status:
+            if status.lower() in ("completed", "done"):
+                statement = statement.where(Task.status.in_(["completed", "done"]))
+            else:
+                statement = statement.where(Task.status == status)
+
+        if priority:
+            statement = statement.where(Task.priority == priority)
+
+        if overdue:
+            now_utc = datetime.now(timezone.utc)
+            statement = statement.where(
+                Task.due_date < now_utc,
+                Task.status.notin_(["completed", "done"]),
+            )
+
+        statement = (
+            statement
+            .order_by(Task.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+
+        return list(db.scalars(statement).all())
 
     @staticmethod
     def get_task_by_id(

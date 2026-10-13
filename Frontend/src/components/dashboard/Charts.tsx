@@ -31,18 +31,27 @@ const PRIORITY_COLORS_MAP: Record<string, string> = {
 
 interface StatusChartProps {
   data: TaskStatusSummary[]
+  onStatusClick?: (status: string) => void
 }
 
-export function TaskStatusChart({ data }: StatusChartProps) {
+export function TaskStatusChart({ data, onStatusClick }: StatusChartProps) {
   const chartData = data.map((d) => ({
     name: d.status.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+    rawStatus: d.status,
     value: d.count,
     fill: STATUS_COLORS_MAP[d.status] ?? '#6366f1',
   }))
 
   return (
     <div className="card">
-      <h3 className="text-base font-semibold text-slate-200 mb-4">Tasks by Status</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-base font-semibold text-slate-200">Tasks by Status</h3>
+        {onStatusClick && (
+          <span className="text-[11px] text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded-full">
+            Click slice to view tasks
+          </span>
+        )}
+      </div>
       <ResponsiveContainer width="100%" height={260}>
         <PieChart>
           <Pie
@@ -53,9 +62,15 @@ export function TaskStatusChart({ data }: StatusChartProps) {
             outerRadius={100}
             paddingAngle={3}
             dataKey="value"
+            className={onStatusClick ? 'cursor-pointer' : ''}
+            onClick={(entry) => {
+              if (onStatusClick && entry && entry.rawStatus) {
+                onStatusClick(entry.rawStatus)
+              }
+            }}
           >
             {chartData.map((entry, i) => (
-              <Cell key={i} fill={entry.fill} />
+              <Cell key={i} fill={entry.fill} className="hover:opacity-80 transition-opacity" />
             ))}
           </Pie>
           <Tooltip
@@ -79,18 +94,27 @@ export function TaskStatusChart({ data }: StatusChartProps) {
 
 interface PriorityChartProps {
   data: TaskPrioritySummary[]
+  onPriorityClick?: (priority: string) => void
 }
 
-export function TaskPriorityChart({ data }: PriorityChartProps) {
+export function TaskPriorityChart({ data, onPriorityClick }: PriorityChartProps) {
   const chartData = data.map((d) => ({
     name: d.priority.charAt(0).toUpperCase() + d.priority.slice(1),
+    rawPriority: d.priority,
     count: d.count,
     fill: PRIORITY_COLORS_MAP[d.priority] ?? '#6366f1',
   }))
 
   return (
     <div className="card">
-      <h3 className="text-base font-semibold text-slate-200 mb-4">Tasks by Priority</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-base font-semibold text-slate-200">Tasks by Priority</h3>
+        {onPriorityClick && (
+          <span className="text-[11px] text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded-full">
+            Click bar to view tasks
+          </span>
+        )}
+      </div>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={chartData} barSize={40}>
           <XAxis
@@ -113,9 +137,18 @@ export function TaskPriorityChart({ data }: PriorityChartProps) {
               color: '#f1f5f9',
             }}
           />
-          <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+          <Bar
+            dataKey="count"
+            radius={[6, 6, 0, 0]}
+            className={onPriorityClick ? 'cursor-pointer' : ''}
+            onClick={(entry) => {
+              if (onPriorityClick && entry && entry.rawPriority) {
+                onPriorityClick(entry.rawPriority)
+              }
+            }}
+          >
             {chartData.map((entry, i) => (
-              <Cell key={i} fill={entry.fill} />
+              <Cell key={i} fill={entry.fill} className="hover:opacity-80 transition-opacity" />
             ))}
           </Bar>
         </BarChart>
@@ -123,3 +156,4 @@ export function TaskPriorityChart({ data }: PriorityChartProps) {
     </div>
   )
 }
+

@@ -16,6 +16,23 @@ export const tasksApi = {
       .get<Task[]>(`/tasks/project/${projectId}`, { params: filters })
       .then((r) => r.data),
 
+  listByOrg: (
+    orgId: number,
+    params?: {
+      status?: string
+      priority?: string
+      overdue?: boolean
+      search?: string
+      offset?: number
+      limit?: number
+    }
+  ) =>
+    api
+      .get<Task[]>('/tasks/', {
+        params: { organization_id: orgId, ...params },
+      })
+      .then((r) => r.data),
+
   getById: (taskId: number) =>
     api.get<Task>(`/tasks/${taskId}`).then((r) => r.data),
 
